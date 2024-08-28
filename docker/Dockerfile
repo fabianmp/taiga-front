@@ -4,6 +4,18 @@
 #
 # Copyright (c) 2021-present Kaleidos INC
 
+FROM node:16.19.1-bullseye AS build
+
+WORKDIR /build
+
+COPY ./package.json ./package-lock.json /build/
+RUN npm set engine-strict false && npm ci
+
+COPY . /build/
+
+RUN npx gulp deploy
+
+
 FROM nginx:1.23-alpine
 LABEL maintainer="support@taiga.io"
 
@@ -11,16 +23,11 @@ COPY docker/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/conf.json.template /
 COPY docker/config_env_subst.sh /docker-entrypoint.d/30_config_env_subst.sh
 
+COPY --from=build /build/dist /taiga/dist
+
 RUN set -eux; \
-    apk update; \
-    apk add --no-cache --virtual .build-deps \
-       subversion; \
-    apk add \
-       bash; \
-    # Install taiga-front core
-    wget https://github.com/taigaio/taiga-front-dist/archive/6.8.1.zip -O source.zip; \
-    unzip source.zip; \
-    mv /taiga-front-dist-6.8.1 /taiga; \
+	 apk update; \
+	 apk add bash; \
     mv /conf.json.template taiga/dist/; \
     chmod +x /docker-entrypoint.d/30_config_env_subst.sh; \
     # Install taiga-front contribs
@@ -39,9 +46,6 @@ RUN set -eux; \
     unzip -j source.zip "taiga-contrib-gitlab-auth-6.8.0/front/dist/*" -d gitlab-auth; \
     rm source.zip; \
     cd /; \
-    # Remove unused dependencies
-    apk del --no-cache .build-deps; \
-    rm source.zip; \
     # Ready for nginx
     mv /taiga/dist/* /usr/share/nginx/html; \
     rm -rf /taiga
