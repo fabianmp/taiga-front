@@ -4,6 +4,12 @@
 
 ...
 
+## 6.8.1+fabianmp.0.1.0 (2024-09-03)
+
+- Hide closed epics in epic selection
+- Add button to clear filters
+- Docker: use local repository to build frontend
+
 ## 6.8.1 (2024-07-23)
 
 - Prevent XSS attack.
